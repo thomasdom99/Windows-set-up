@@ -75,7 +75,11 @@ $PACKAGES = @(
     "vlc",
     "handbrake",
     "winrar",
-    "virtualbox"
+    "virtualbox",
+    "revo-uninstaller",
+    "notepadplusplus",
+    "battle.net",
+    "epicgameslauncher"
 )
 
 Write-Host ""
@@ -114,6 +118,10 @@ foreach ($package in $PACKAGES) {
         "handbrake"        { "HandBrake" }
         "winrar"           { "WinRAR" }
         "virtualbox"       { "Oracle VirtualBox" }
+        "revo-uninstaller" { "Revo Uninstaller" }
+        "notepadplusplus"  { "Notepad++" }
+        "battle.net"       { "Battle.net" }
+        "epicgameslauncher"{ "Epic Games Launcher" }
         default            { $package }
     }
     $registryInstalled = Get-ItemProperty $registryPaths -ErrorAction SilentlyContinue |
@@ -202,8 +210,3 @@ Write-Host "  Website:" -ForegroundColor Cyan
 Write-Host "     - Cisco Packet Tracer -> https://www.netacad.com"
 Write-Host "     - Firefox Developer Edition -> https://www.mozilla.org/firefox/developer"
 Write-Host "     - Microsoft 365 -> https://www.microsoft.com/microsoft-365"
-Write-Host ""
-Write-Host "  Microsoft Store:" -ForegroundColor Cyan
-Write-Host "     - WhatsApp"
-Write-Host "     - Speedtest by Ookla"
-Write-Host "     - Windows PowerToys"
