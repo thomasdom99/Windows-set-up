@@ -77,7 +77,7 @@ $PACKAGES = @(
     "adobereader",
     "vlc",
     "handbrake",
-    "7zip",
+    "winrar",
     "googledrive",
     "virtualbox"
 )
