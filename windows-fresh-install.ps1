@@ -163,7 +163,7 @@ if (Test-Path $adobePath) {
     $adobeUrl = "https://ardownload2.adobe.com/pub/adobe/reader/win/AcrobatDC/$adobeVersion/AcroRdrDC${adobeVersion}_MUI.exe"
     $adobeInstaller = "$env:TEMP\AdobeReader.exe"
     Write-Host "  [Downloading] Downloading Adobe Acrobat Reader..." -ForegroundColor Yellow
-    Invoke-WebRequest -Uri $adobeUrl -OutFile $adobeInstaller
+    (New-Object System.Net.WebClient).DownloadFile($adobeUrl, $adobeInstaller)
     Write-Host "  [Downloading] Installing Adobe Acrobat Reader..." -ForegroundColor Yellow
     Start-Process -FilePath $adobeInstaller -ArgumentList "/sAll /msi /norestart /quiet ALLUSERS=1 EULA_ACCEPT=YES" -Wait
     Remove-Item $adobeInstaller -Force
@@ -178,7 +178,7 @@ if (Test-Path $googledrivePath) {
     Write-Host "  [Downloading] Downloading Google Drive..." -ForegroundColor Yellow
     $googledriveUrl = "https://dl.google.com/drive-file-stream/GoogleDriveSetup.exe"
     $googledriveInstaller = "$env:TEMP\GoogleDriveSetup.exe"
-    Invoke-WebRequest -Uri $googledriveUrl -OutFile $googledriveInstaller
+    (New-Object System.Net.WebClient).DownloadFile($googledriveUrl, $googledriveInstaller)
     Write-Host "  [Downloading] Installing Google Drive..." -ForegroundColor Yellow
     Start-Process -FilePath $googledriveInstaller -ArgumentList "--silent --desktop_shortcut" -Wait
     Remove-Item $googledriveInstaller -Force
