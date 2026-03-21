@@ -78,7 +78,6 @@ $PACKAGES = @(
     "virtualbox",
     "revo-uninstaller",
     "notepadplusplus",
-    "battle.net",
     "epicgameslauncher"
 )
 
@@ -120,7 +119,6 @@ foreach ($package in $PACKAGES) {
         "virtualbox"       { "Oracle VirtualBox" }
         "revo-uninstaller" { "Revo Uninstaller" }
         "notepadplusplus"  { "Notepad++" }
-        "battle.net"       { "Battle.net" }
         "epicgameslauncher"{ "Epic Games Launcher" }
         default            { $package }
     }
@@ -191,6 +189,21 @@ if ($googledrivePath) {
     Start-Process -FilePath $googledriveInstaller -ArgumentList "--silent --desktop_shortcut" -Wait
     Remove-Item $googledriveInstaller -Force
     Write-Host "  [OK] Google Drive installed." -ForegroundColor Green
+}
+
+# Battle.net — direct from Blizzard
+$battlenetPath = Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*" -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -like "*Battle.net*" }
+if ($battlenetPath) {
+    Write-Host "  [OK] Battle.net already installed, skipping." -ForegroundColor Green
+} else {
+    Write-Host "  [Downloading] Downloading Battle.net..." -ForegroundColor Yellow
+    $battlenetUrl = "https://www.battle.net/download/getInstallerForGame?os=win&locale=enUS&version=LIVE&gameProgram=BATTLENET_APP"
+    $battlenetInstaller = "$env:TEMP\BattleNetSetup.exe"
+    (New-Object System.Net.WebClient).DownloadFile($battlenetUrl, $battlenetInstaller)
+    Write-Host "  [Downloading] Installing Battle.net..." -ForegroundColor Yellow
+    Start-Process -FilePath $battlenetInstaller -ArgumentList "--lang=enUS --installpath=`"C:\Program Files (x86)\Battle.net`"" -Wait
+    Remove-Item $battlenetInstaller -Force
+    Write-Host "  [OK] Battle.net installed." -ForegroundColor Green
 }
 
 Write-Host ""
