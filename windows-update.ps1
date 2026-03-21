@@ -152,8 +152,8 @@ if (Test-Path $adobePath) {
 }
 
 # Google Drive
-$googledrivePath = "C:\Program Files\Google\Drive File Stream\googledrivesync.exe"
-if (Test-Path $googledrivePath) {
+$googledrivePath = Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*" -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -like "*Google Drive*" }
+if ($googledrivePath) {
     Write-Host "  [OK] Google Drive already installed, skipping." -ForegroundColor Green
 } else {
     Write-Host "  [Downloading] Downloading Google Drive..." -ForegroundColor Yellow
