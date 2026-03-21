@@ -74,11 +74,9 @@ $PACKAGES = @(
     "git",
     "filezilla",
     "xampp",
-    "adobereader",
     "vlc",
     "handbrake",
     "winrar",
-    "googledrive",
     "virtualbox"
 )
 
@@ -109,6 +107,47 @@ foreach ($package in $PACKAGES) {
 Write-Host ""
 Write-Host "Cleaning up..." -ForegroundColor Cyan
 & choco cleanup | Out-Null
+
+Write-Host ""
+Write-Host "Installing apps via direct download..." -ForegroundColor Cyan
+
+# Adobe Acrobat Reader — dynamically fetch latest version
+$adobePath = "C:\Program Files\Adobe\Acrobat DC\Acrobat\Acrobat.exe"
+if (Test-Path $adobePath) {
+    Write-Host "  Adobe Acrobat Reader already installed, skipping." -ForegroundColor Green
+} else {
+    Write-Host "  Fetching latest Adobe Acrobat Reader version..." -ForegroundColor Yellow
+    try {
+        $adobePage = Invoke-WebRequest -Uri "https://ardownload2.adobe.com/pub/adobe/reader/win/AcrobatDC/" -UseBasicParsing -UserAgent "Mozilla/5.0"
+        $adobeVersion = ($adobePage.Links.href | Where-Object { $_ -match '^\d{10}/$' } | Sort-Object | Select-Object -Last 1) -replace '/',''
+    } catch { $adobeVersion = $null }
+    if (-not $adobeVersion) {
+        $adobeVersion = "2500121288"
+        Write-Host "  Using fallback version: $adobeVersion" -ForegroundColor Yellow
+    } else {
+        Write-Host "  Latest version: $adobeVersion" -ForegroundColor Yellow
+    }
+    $adobeUrl = "https://ardownload2.adobe.com/pub/adobe/reader/win/AcrobatDC/$adobeVersion/AcroRdrDC${adobeVersion}_MUI.exe"
+    $adobeInstaller = "$env:TEMP\AdobeReader.exe"
+    Invoke-WebRequest -Uri $adobeUrl -OutFile $adobeInstaller
+    Start-Process -FilePath $adobeInstaller -ArgumentList "/sAll /msi /norestart /quiet ALLUSERS=1 EULA_ACCEPT=YES" -Wait
+    Remove-Item $adobeInstaller -Force
+    Write-Host "  Adobe Acrobat Reader installed." -ForegroundColor Green
+}
+
+# Google Drive — permanent redirect URL, always latest
+$googledrivePath = "C:\Program Files\Google\Drive File Stream\googledrivesync.exe"
+if (Test-Path $googledrivePath) {
+    Write-Host "  Google Drive already installed, skipping." -ForegroundColor Green
+} else {
+    Write-Host "  Downloading Google Drive..." -ForegroundColor Yellow
+    $googledriveUrl = "https://dl.google.com/drive-file-stream/GoogleDriveSetup.exe"
+    $googledriveInstaller = "$env:TEMP\GoogleDriveSetup.exe"
+    Invoke-WebRequest -Uri $googledriveUrl -OutFile $googledriveInstaller
+    Start-Process -FilePath $googledriveInstaller -ArgumentList "--silent --desktop_shortcut" -Wait
+    Remove-Item $googledriveInstaller -Force
+    Write-Host "  Google Drive installed." -ForegroundColor Green
+}
 
 Write-Host ""
 if ($FAILED_INSTALLS.Count -eq 0) {
