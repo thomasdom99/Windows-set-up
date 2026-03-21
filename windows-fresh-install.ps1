@@ -84,22 +84,59 @@ Write-Host ""
 Write-Host "Installing packages..." -ForegroundColor Cyan
 
 foreach ($package in $PACKAGES) {
-    $installed = & choco list --local-only 2>$null | Select-String "^$package "
-    if ($installed) {
-        Write-Host "  $package already installed, skipping." -ForegroundColor Green
+    # Check via choco first, then check common install paths
+    $chocoInstalled = & choco list --local-only 2>$null | Select-String "^$package "
+    
+    # Also check Windows registry for installed programs
+    $registryPaths = @(
+        "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*",
+        "HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*",
+        "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*"
+    )
+    $displayName = switch ($package) {
+        "spotify"          { "Spotify" }
+        "googlechrome"     { "Google Chrome" }
+        "brave"            { "Brave" }
+        "discord"          { "Discord" }
+        "microsoft-teams"  { "Microsoft Teams" }
+        "vscode"           { "Microsoft Visual Studio Code" }
+        "github-desktop"   { "GitHub Desktop" }
+        "docker-desktop"   { "Docker Desktop" }
+        "postman"          { "Postman" }
+        "bitwarden"        { "Bitwarden" }
+        "notion"           { "Notion" }
+        "steam"            { "Steam" }
+        "chatgpt"          { "ChatGPT" }
+        "drawio"           { "draw.io" }
+        "obs-studio"       { "OBS Studio" }
+        "wireshark"        { "Wireshark" }
+        "python"           { "Python" }
+        "git"              { "Git" }
+        "filezilla"        { "FileZilla" }
+        "xampp"            { "XAMPP" }
+        "vlc"              { "VLC media player" }
+        "handbrake"        { "HandBrake" }
+        "winrar"           { "WinRAR" }
+        "virtualbox"       { "Oracle VirtualBox" }
+        default            { $package }
+    }
+    $registryInstalled = Get-ItemProperty $registryPaths -ErrorAction SilentlyContinue | 
+        Where-Object { $_.DisplayName -like "*$displayName*" }
+
+    if ($chocoInstalled -or $registryInstalled) {
+        Write-Host "  ✅ $package already installed, skipping." -ForegroundColor Green
     } else {
-        Write-Host "  Installing $package..." -ForegroundColor Yellow
+        Write-Host "  ⬇️  Installing $package..." -ForegroundColor Yellow
         & choco install $package -y --no-progress 2>&1 | Out-Null
         if ($LASTEXITCODE -ne 0) {
-            # Retry with --ignore-checksums
-            Write-Host "  Retrying $package with --ignore-checksums..." -ForegroundColor Yellow
+            Write-Host "  🔄 Retrying $package with --ignore-checksums..." -ForegroundColor Yellow
             & choco install $package -y --no-progress --ignore-checksums 2>&1 | Out-Null
         }
         if ($LASTEXITCODE -ne 0) {
-            Write-Host "  Failed to install $package, skipping..." -ForegroundColor Red
+            Write-Host "  ⚠️  Failed to install $package, skipping..." -ForegroundColor Red
             $FAILED_INSTALLS += $package
         } else {
-            Write-Host "  $package installed successfully." -ForegroundColor Green
+            Write-Host "  ✅ $package installed successfully." -ForegroundColor Green
         }
     }
 }
@@ -114,39 +151,42 @@ Write-Host "Installing apps via direct download..." -ForegroundColor Cyan
 # Adobe Acrobat Reader — dynamically fetch latest version
 $adobePath = "C:\Program Files\Adobe\Acrobat DC\Acrobat\Acrobat.exe"
 if (Test-Path $adobePath) {
-    Write-Host "  Adobe Acrobat Reader already installed, skipping." -ForegroundColor Green
+    Write-Host "  ✅ Adobe Acrobat Reader already installed, skipping." -ForegroundColor Green
 } else {
-    Write-Host "  Fetching latest Adobe Acrobat Reader version..." -ForegroundColor Yellow
+    Write-Host "  🔍 Fetching latest Adobe Acrobat Reader version..." -ForegroundColor Yellow
     try {
         $adobePage = Invoke-WebRequest -Uri "https://ardownload2.adobe.com/pub/adobe/reader/win/AcrobatDC/" -UseBasicParsing -UserAgent "Mozilla/5.0"
         $adobeVersion = ($adobePage.Links.href | Where-Object { $_ -match '^\d{10}/$' } | Sort-Object | Select-Object -Last 1) -replace '/',''
     } catch { $adobeVersion = $null }
     if (-not $adobeVersion) {
         $adobeVersion = "2500121288"
-        Write-Host "  Using fallback version: $adobeVersion" -ForegroundColor Yellow
+        Write-Host "  📌 Using fallback version: $adobeVersion" -ForegroundColor Yellow
     } else {
-        Write-Host "  Latest version: $adobeVersion" -ForegroundColor Yellow
+        Write-Host "  📌 Latest version: $adobeVersion" -ForegroundColor Yellow
     }
     $adobeUrl = "https://ardownload2.adobe.com/pub/adobe/reader/win/AcrobatDC/$adobeVersion/AcroRdrDC${adobeVersion}_MUI.exe"
     $adobeInstaller = "$env:TEMP\AdobeReader.exe"
+    Write-Host "  ⬇️  Downloading Adobe Acrobat Reader..." -ForegroundColor Yellow
     Invoke-WebRequest -Uri $adobeUrl -OutFile $adobeInstaller
+    Write-Host "  📦 Installing Adobe Acrobat Reader..." -ForegroundColor Yellow
     Start-Process -FilePath $adobeInstaller -ArgumentList "/sAll /msi /norestart /quiet ALLUSERS=1 EULA_ACCEPT=YES" -Wait
     Remove-Item $adobeInstaller -Force
-    Write-Host "  Adobe Acrobat Reader installed." -ForegroundColor Green
+    Write-Host "  ✅ Adobe Acrobat Reader installed." -ForegroundColor Green
 }
 
 # Google Drive — permanent redirect URL, always latest
 $googledrivePath = "C:\Program Files\Google\Drive File Stream\googledrivesync.exe"
 if (Test-Path $googledrivePath) {
-    Write-Host "  Google Drive already installed, skipping." -ForegroundColor Green
+    Write-Host "  ✅ Google Drive already installed, skipping." -ForegroundColor Green
 } else {
-    Write-Host "  Downloading Google Drive..." -ForegroundColor Yellow
+    Write-Host "  ⬇️  Downloading Google Drive..." -ForegroundColor Yellow
     $googledriveUrl = "https://dl.google.com/drive-file-stream/GoogleDriveSetup.exe"
     $googledriveInstaller = "$env:TEMP\GoogleDriveSetup.exe"
     Invoke-WebRequest -Uri $googledriveUrl -OutFile $googledriveInstaller
+    Write-Host "  📦 Installing Google Drive..." -ForegroundColor Yellow
     Start-Process -FilePath $googledriveInstaller -ArgumentList "--silent --desktop_shortcut" -Wait
     Remove-Item $googledriveInstaller -Force
-    Write-Host "  Google Drive installed." -ForegroundColor Green
+    Write-Host "  ✅ Google Drive installed." -ForegroundColor Green
 }
 
 Write-Host ""
