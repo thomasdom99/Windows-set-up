@@ -49,7 +49,11 @@ $PACKAGES = @(
     "vlc",
     "handbrake",
     "winrar",
-    "virtualbox"
+    "virtualbox",
+    "revo-uninstaller",
+    "notepadplusplus",
+    "battle.net",
+    "epicgameslauncher"
 )
 
 Write-Host "Updating Chocolatey..." -ForegroundColor Cyan
@@ -91,6 +95,10 @@ foreach ($package in $PACKAGES) {
         "handbrake"        { "HandBrake" }
         "winrar"           { "WinRAR" }
         "virtualbox"       { "Oracle VirtualBox" }
+        "revo-uninstaller" { "Revo Uninstaller" }
+        "notepadplusplus"  { "Notepad++" }
+        "battle.net"       { "Battle.net" }
+        "epicgameslauncher"{ "Epic Games Launcher" }
         default            { $package }
     }
     $registryInstalled = Get-ItemProperty $registryPaths -ErrorAction SilentlyContinue |
@@ -175,3 +183,8 @@ if ($FAILED_INSTALLS.Count -eq 0) {
         Write-Host "   [Failed] $fail" -ForegroundColor Red
     }
 }
+
+Write-Host ""
+Write-Host "Cleaning up Chocolatey logs..." -ForegroundColor Cyan
+Remove-Item "C:\ProgramData\chocolatey\logs\*" -Force -ErrorAction SilentlyContinue
+Write-Host "[OK] Logs cleared." -ForegroundColor Green
