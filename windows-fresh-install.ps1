@@ -60,11 +60,9 @@ $PACKAGES = @(
     "vscode",
     "github-desktop",
     "docker-desktop",
-    "postman",
     "bitwarden",
     "notion",
     "steam",
-    "chatgpt",
     "drawio",
     "obs-studio",
     "wireshark",
@@ -75,7 +73,6 @@ $PACKAGES = @(
     "vlc",
     "handbrake",
     "winrar",
-    "virtualbox",
     "revo-uninstaller",
     "notepadplusplus",
     "epicgameslauncher"
@@ -101,11 +98,9 @@ foreach ($package in $PACKAGES) {
         "vscode"           { "Microsoft Visual Studio Code" }
         "github-desktop"   { "GitHub Desktop" }
         "docker-desktop"   { "Docker Desktop" }
-        "postman"          { "Postman" }
         "bitwarden"        { "Bitwarden" }
         "notion"           { "Notion" }
         "steam"            { "Steam" }
-        "chatgpt"          { "ChatGPT" }
         "drawio"           { "draw.io" }
         "obs-studio"       { "OBS Studio" }
         "wireshark"        { "Wireshark" }
@@ -116,7 +111,6 @@ foreach ($package in $PACKAGES) {
         "vlc"              { "VLC media player" }
         "handbrake"        { "HandBrake" }
         "winrar"           { "WinRAR" }
-        "virtualbox"       { "Oracle VirtualBox" }
         "revo-uninstaller" { "Revo Uninstaller" }
         "notepadplusplus"  { "Notepad++" }
         "epicgameslauncher"{ "Epic Games Launcher" }
@@ -146,6 +140,63 @@ foreach ($package in $PACKAGES) {
 Write-Host ""
 Write-Host "Cleaning up..." -ForegroundColor Cyan
 & choco cleanup | Out-Null
+
+Write-Host ""
+Write-Host "Checking for corrupted Chocolatey packages..." -ForegroundColor Cyan
+
+$chocoLib = "C:\ProgramData\chocolatey\lib"
+if (Test-Path $chocoLib) {
+    $corruptFound = $false
+    Get-ChildItem -Path $chocoLib -Directory | ForEach-Object {
+        $pkgName = $_.Name
+        $nupkgPath = Join-Path $_.FullName "$pkgName.nupkg"
+        if (Test-Path $nupkgPath) {
+            $size = (Get-Item $nupkgPath).Length
+            if ($size -lt 1024) {
+                $corruptFound = $true
+                Write-Host "  [Fixing] Corrupt nupkg detected: $pkgName — reinstalling..." -ForegroundColor Yellow
+                choco uninstall $pkgName -y --force 2>&1 | Out-Null
+                choco install $pkgName -y --no-progress 2>&1 | Out-Null
+                if ($LASTEXITCODE -eq 0) {
+                    Write-Host "  [OK] $pkgName reinstalled successfully." -ForegroundColor Green
+                } else {
+                    Write-Host "  [Failed] $pkgName reinstall failed — may need manual fix." -ForegroundColor Red
+                    $FAILED_INSTALLS += $pkgName
+                }
+            }
+        }
+    }
+    if (-not $corruptFound) {
+        Write-Host "  [OK] All Chocolatey packages look healthy." -ForegroundColor Green
+    }
+} else {
+    Write-Host "  [OK] Chocolatey lib folder not found, skipping corruption check." -ForegroundColor Green
+}
+
+Write-Host ""
+Write-Host "Installing apps via winget..." -ForegroundColor Cyan
+
+$WINGET_PACKAGES = @(
+    @{ Id = "Postman.Postman";       Name = "Postman" },
+    @{ Id = "OpenAI.ChatGPT";        Name = "ChatGPT" },
+    @{ Id = "Oracle.VirtualBox";     Name = "VirtualBox" }
+)
+
+foreach ($pkg in $WINGET_PACKAGES) {
+    $wingetCheck = winget list --id $pkg.Id 2>$null | Select-String $pkg.Id
+    if ($wingetCheck) {
+        Write-Host "  [OK] $($pkg.Name) already installed, skipping." -ForegroundColor Green
+    } else {
+        Write-Host "  [Downloading] Installing $($pkg.Name)..." -ForegroundColor Yellow
+        winget install --id $pkg.Id -e --silent --accept-source-agreements --accept-package-agreements 2>&1 | Out-Null
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "  [OK] $($pkg.Name) installed successfully." -ForegroundColor Green
+        } else {
+            Write-Host "  [Failed] Failed to install $($pkg.Name)." -ForegroundColor Red
+            $FAILED_INSTALLS += $pkg.Name
+        }
+    }
+}
 
 Write-Host ""
 Write-Host "Installing apps via direct download..." -ForegroundColor Cyan
