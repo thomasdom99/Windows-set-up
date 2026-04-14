@@ -188,7 +188,6 @@ winget source update --accept-source-agreements 2>&1 | Out-Null
 
 $WINGET_PACKAGES = @(
     @{ Id = "Postman.Postman";       Name = "Postman";    Source = "winget" },
-    @{ Id = "9NT1R1C2HH7J";         Name = "ChatGPT";    Source = "msstore" },
     @{ Id = "Oracle.VirtualBox";     Name = "VirtualBox"; Source = "winget" },
     @{ Id = "OBSProject.OBSStudio";  Name = "OBS Studio"; Source = "winget" }
 )
@@ -271,3 +270,6 @@ Write-Host "     - Cisco Packet Tracer -> https://www.netacad.com"
 Write-Host "     - Firefox Developer Edition -> https://www.mozilla.org/firefox/developer"
 Write-Host "     - Microsoft 365 -> https://www.microsoft.com/microsoft-365"
 Write-Host "     - Battle.net -> https://www.battle.net/download"
+Write-Host ""
+Write-Host "  Microsoft Store:" -ForegroundColor Cyan
+Write-Host "     - ChatGPT -> https://apps.microsoft.com/detail/9NT1R1C2HH7J"
