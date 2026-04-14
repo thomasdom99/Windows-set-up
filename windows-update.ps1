@@ -1,54 +1,28 @@
 # ===========================================
-#   Windows Fresh Install Script
-#   Run this after a fresh format to install
-#   all your essential apps via Chocolatey.
+#   Windows Update Script
+#   Run this every now and then to keep
+#   all your apps up to date via Chocolatey.
+#   Also installs any missing apps.
 #
 #   HOW TO RUN:
 #   1. Open PowerShell as Administrator
 #   2. Run: Set-ExecutionPolicy Bypass -Scope Process -Force
-#   3. Run: .\windows-fresh-install.ps1
+#   3. Run: .\windows-update.ps1
 # ===========================================
-
-# Pre-flight checklist
-Write-Host ""
-Write-Host "Windows Fresh Install Script" -ForegroundColor Cyan
-Write-Host "===========================================" -ForegroundColor Cyan
-Write-Host ""
-Write-Host "Before we begin, please confirm the following:" -ForegroundColor Yellow
-Write-Host ""
-Write-Host "  1. You are connected to WiFi"
-Write-Host "  2. You are signed into the Microsoft Store"
-Write-Host "  3. You are running PowerShell as Administrator"
-Write-Host ""
-$confirm = Read-Host "Have you completed all of the above? (y/n)"
-Write-Host ""
-
-if ($confirm -notmatch '^(y|yes|yep|yeah)$') {
-    Write-Host "Please complete the checklist above before running this script." -ForegroundColor Red
-    Write-Host ""
-    Write-Host "  -> Sign into Microsoft Store: Open Store -> Sign In" -ForegroundColor Yellow
-    Write-Host "  -> Run PowerShell as Administrator: Right click -> Run as Administrator" -ForegroundColor Yellow
-    Write-Host ""
-    exit 1
-}
-
-Write-Host "Great! Starting installation..." -ForegroundColor Green
-Write-Host ""
 
 $FAILED_INSTALLS = @()
 
-# Install Chocolatey if not already installed
-Write-Host "Checking for Chocolatey..." -ForegroundColor Cyan
+# Refresh PATH to make sure choco is available
+$env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+
+Write-Host ""
+Write-Host "Windows Update Script" -ForegroundColor Cyan
+Write-Host "===========================================" -ForegroundColor Cyan
+Write-Host ""
+
 if (!(Get-Command choco -ErrorAction SilentlyContinue)) {
-    Write-Host "Installing Chocolatey..." -ForegroundColor Yellow
-    Set-ExecutionPolicy Bypass -Scope Process -Force
-    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
-    Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
-    $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
-    Write-Host "Chocolatey installed and PATH refreshed." -ForegroundColor Green
-} else {
-    Write-Host "Chocolatey already installed. Updating..." -ForegroundColor Green
-    choco upgrade chocolatey -y | Out-Null
+    Write-Host "Chocolatey not found! Please run the fresh-install script first." -ForegroundColor Red
+    exit 1
 }
 
 $PACKAGES = @(
@@ -64,7 +38,6 @@ $PACKAGES = @(
     "notion",
     "steam",
     "drawio",
-    "obs-studio",
     "wireshark",
     "python",
     "git",
@@ -78,8 +51,11 @@ $PACKAGES = @(
     "epicgameslauncher"
 )
 
+Write-Host "Updating Chocolatey..." -ForegroundColor Cyan
+& choco upgrade chocolatey -y | Out-Null
+
 Write-Host ""
-Write-Host "Installing packages..." -ForegroundColor Cyan
+Write-Host "Checking packages..." -ForegroundColor Cyan
 
 foreach ($package in $PACKAGES) {
     $chocoInstalled = & choco list --local-only 2>$null | Select-String "^$package "
@@ -102,7 +78,6 @@ foreach ($package in $PACKAGES) {
         "notion"           { "Notion" }
         "steam"            { "Steam" }
         "drawio"           { "draw.io" }
-        "obs-studio"       { "OBS Studio" }
         "wireshark"        { "Wireshark" }
         "python"           { "Python" }
         "git"              { "Git" }
@@ -122,7 +97,7 @@ foreach ($package in $PACKAGES) {
     if ($chocoInstalled -or $registryInstalled) {
         Write-Host "  [OK] $package already installed, skipping." -ForegroundColor Green
     } else {
-        Write-Host "  [Downloading] Installing $package..." -ForegroundColor Yellow
+        Write-Host "  [Downloading] Installing missing app: $package..." -ForegroundColor Yellow
         & choco install $package -y --no-progress 2>&1 | Out-Null
         if ($LASTEXITCODE -ne 0) {
             Write-Host "  [Downloading] Retrying $package with --ignore-checksums..." -ForegroundColor Yellow
@@ -138,7 +113,11 @@ foreach ($package in $PACKAGES) {
 }
 
 Write-Host ""
-Write-Host "Cleaning up..." -ForegroundColor Cyan
+Write-Host "Upgrading all packages..." -ForegroundColor Cyan
+& choco upgrade all -y --ignore-checksums
+
+Write-Host ""
+Write-Host "Cleaning up old versions..." -ForegroundColor Cyan
 & choco cleanup | Out-Null
 
 Write-Host ""
@@ -183,15 +162,16 @@ if (Test-Path $chocoLib) {
 }
 
 Write-Host ""
-Write-Host "Installing apps via winget..." -ForegroundColor Cyan
+Write-Host "Checking winget apps..." -ForegroundColor Cyan
 
 # Accept winget source agreements upfront to prevent hanging
 winget source update --accept-source-agreements 2>&1 | Out-Null
 
 $WINGET_PACKAGES = @(
-    @{ Id = "Postman.Postman";       Name = "Postman" },
-    @{ Id = "OpenAI.ChatGPT";        Name = "ChatGPT" },
-    @{ Id = "Oracle.VirtualBox";     Name = "VirtualBox" }
+    @{ Id = "Postman.Postman";       Name = "Postman";    Source = "winget" },
+    @{ Id = "9NT1R1C2HH7J";         Name = "ChatGPT";    Source = "msstore" },
+    @{ Id = "Oracle.VirtualBox";     Name = "VirtualBox"; Source = "winget" },
+    @{ Id = "OBSProject.OBSStudio";  Name = "OBS Studio"; Source = "winget" }
 )
 
 foreach ($pkg in $WINGET_PACKAGES) {
@@ -200,7 +180,7 @@ foreach ($pkg in $WINGET_PACKAGES) {
         Write-Host "  [OK] $($pkg.Name) already installed, skipping." -ForegroundColor Green
     } else {
         Write-Host "  [Downloading] Installing $($pkg.Name)..." -ForegroundColor Yellow
-        winget install --id $pkg.Id -e --silent --accept-source-agreements --accept-package-agreements 2>&1 | Out-Null
+        winget install --id $pkg.Id -e --source $pkg.Source --silent --accept-source-agreements --accept-package-agreements 2>&1 | Out-Null
         if ($LASTEXITCODE -eq 0) {
             Write-Host "  [OK] $($pkg.Name) installed successfully." -ForegroundColor Green
         } else {
@@ -211,7 +191,7 @@ foreach ($pkg in $WINGET_PACKAGES) {
 }
 
 Write-Host ""
-Write-Host "Installing apps via direct download..." -ForegroundColor Cyan
+Write-Host "Checking directly downloaded apps..." -ForegroundColor Cyan
 
 # Adobe Acrobat Reader
 $adobePath = "C:\Program Files\Adobe\Acrobat DC\Acrobat\Acrobat.exe"
@@ -256,7 +236,7 @@ if ($googledrivePath) {
 
 Write-Host ""
 if ($FAILED_INSTALLS.Count -eq 0) {
-    Write-Host "All done! Your Windows PC is set up and ready to go." -ForegroundColor Green
+    Write-Host "Everything is up to date and nothing is missing!" -ForegroundColor Green
 } else {
     Write-Host "Done! However the following apps failed and may need to be installed manually:" -ForegroundColor Yellow
     foreach ($fail in $FAILED_INSTALLS) {
@@ -265,10 +245,6 @@ if ($FAILED_INSTALLS.Count -eq 0) {
 }
 
 Write-Host ""
-Write-Host "The following apps need to be installed manually:" -ForegroundColor Yellow
-Write-Host ""
-Write-Host "  Website:" -ForegroundColor Cyan
-Write-Host "     - Cisco Packet Tracer -> https://www.netacad.com"
-Write-Host "     - Firefox Developer Edition -> https://www.mozilla.org/firefox/developer"
-Write-Host "     - Microsoft 365 -> https://www.microsoft.com/microsoft-365"
-Write-Host "     - Battle.net -> https://www.battle.net/download"
+Write-Host "Cleaning up Chocolatey logs..." -ForegroundColor Cyan
+Remove-Item "C:\ProgramData\chocolatey\logs\*" -Force -ErrorAction SilentlyContinue
+Write-Host "[OK] Logs cleared." -ForegroundColor Green
