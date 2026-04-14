@@ -144,17 +144,23 @@ Write-Host "Checking for corrupted Chocolatey packages..." -ForegroundColor Cyan
 
 $chocoLib = "C:\ProgramData\chocolatey\lib"
 $chocoMeta = "C:\ProgramData\chocolatey\.chocolatey"
-
-# Fix 1: Remove .registry.bad files from both lib and .chocolatey folders
 $corruptFound = $false
-foreach ($scanPath in @($chocoLib, $chocoMeta)) {
-    if (Test-Path $scanPath) {
-        $badFiles = Get-ChildItem -Path $scanPath -Recurse -Filter "*.registry.bad" -ErrorAction SilentlyContinue
-        foreach ($badFile in $badFiles) {
-            $corruptFound = $true
-            Write-Host "  [Fixing] Corrupt registry file found: $($badFile.Name) - removing..." -ForegroundColor Yellow
-            Remove-Item $badFile.FullName -Force -ErrorAction SilentlyContinue
-            Write-Host "  [OK] Removed $($badFile.Name)." -ForegroundColor Green
+
+# Fix 1: Find packages with .registry.bad files and reinstall them
+if (Test-Path $chocoMeta) {
+    Get-ChildItem -Path $chocoMeta -Recurse -Filter "*.registry.bad" -ErrorAction SilentlyContinue | ForEach-Object {
+        $corruptFound = $true
+        $pkgFolder = $_.Directory.Name
+        $pkgName = ($pkgFolder -split '\.')[0]
+        Write-Host "  [Fixing] Bad registry state for $pkgName - reinstalling cleanly..." -ForegroundColor Yellow
+        choco uninstall $pkgName -y --force --remove-dependencies 2>&1 | Out-Null
+        Remove-Item "$chocoMeta\$pkgFolder" -Recurse -Force -ErrorAction SilentlyContinue
+        choco install $pkgName -y --no-progress 2>&1 | Out-Null
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "  [OK] $pkgName reinstalled successfully." -ForegroundColor Green
+        } else {
+            Write-Host "  [Failed] $pkgName reinstall failed - may need manual fix." -ForegroundColor Red
+            $FAILED_INSTALLS += $pkgName
         }
     }
 }
