@@ -113,14 +113,6 @@ foreach ($package in $PACKAGES) {
 }
 
 Write-Host ""
-Write-Host "Upgrading all packages..." -ForegroundColor Cyan
-& choco upgrade all -y --no-progress --ignore-checksums --execution-timeout=300
-
-Write-Host ""
-Write-Host "Cleaning up old versions..." -ForegroundColor Cyan
-& choco cleanup | Out-Null
-
-Write-Host ""
 Write-Host "Checking for corrupted Chocolatey packages..." -ForegroundColor Cyan
 
 $chocoLib = "C:\ProgramData\chocolatey\lib"
@@ -171,6 +163,14 @@ if (Test-Path $chocoLib) {
 } else {
     Write-Host "  [OK] Chocolatey lib folder not found, skipping corruption check." -ForegroundColor Green
 }
+
+Write-Host ""
+Write-Host "Upgrading all packages..." -ForegroundColor Cyan
+& choco upgrade all -y --no-progress --ignore-checksums --execution-timeout=300
+
+Write-Host ""
+Write-Host "Cleaning up old versions..." -ForegroundColor Cyan
+& choco cleanup | Out-Null
 
 Write-Host ""
 Write-Host "Checking winget apps..." -ForegroundColor Cyan
