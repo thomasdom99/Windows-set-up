@@ -135,13 +135,13 @@ if (Test-Path $chocoLib) {
             $size = (Get-Item $nupkgPath).Length
             if ($size -lt 1024) {
                 $corruptFound = $true
-                Write-Host "  [Fixing] Corrupt nupkg detected: $pkgName — reinstalling..." -ForegroundColor Yellow
+                Write-Host "  [Fixing] Corrupt nupkg detected: $pkgName - reinstalling..." -ForegroundColor Yellow
                 choco uninstall $pkgName -y --force 2>&1 | Out-Null
                 choco install $pkgName -y --no-progress 2>&1 | Out-Null
                 if ($LASTEXITCODE -eq 0) {
                     Write-Host "  [OK] $pkgName reinstalled successfully." -ForegroundColor Green
                 } else {
-                    Write-Host "  [Failed] $pkgName reinstall failed — may need manual fix." -ForegroundColor Red
+                    Write-Host "  [Failed] $pkgName reinstall failed - may need manual fix." -ForegroundColor Red
                     $FAILED_INSTALLS += $pkgName
                 }
             }
