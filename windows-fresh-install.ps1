@@ -143,19 +143,24 @@ Write-Host ""
 Write-Host "Checking for corrupted Chocolatey packages..." -ForegroundColor Cyan
 
 $chocoLib = "C:\ProgramData\chocolatey\lib"
-if (Test-Path $chocoLib) {
-    $corruptFound = $false
+$chocoMeta = "C:\ProgramData\chocolatey\.chocolatey"
 
-    # Fix 1: Remove any .registry.bad files (corrupt XML registry files)
-    $badFiles = Get-ChildItem -Path $chocoLib -Recurse -Filter "*.registry.bad" -ErrorAction SilentlyContinue
-    foreach ($badFile in $badFiles) {
-        $corruptFound = $true
-        Write-Host "  [Fixing] Corrupt registry file found: $($badFile.Name) - removing..." -ForegroundColor Yellow
-        Remove-Item $badFile.FullName -Force -ErrorAction SilentlyContinue
-        Write-Host "  [OK] Removed $($badFile.Name)." -ForegroundColor Green
+# Fix 1: Remove .registry.bad files from both lib and .chocolatey folders
+$corruptFound = $false
+foreach ($scanPath in @($chocoLib, $chocoMeta)) {
+    if (Test-Path $scanPath) {
+        $badFiles = Get-ChildItem -Path $scanPath -Recurse -Filter "*.registry.bad" -ErrorAction SilentlyContinue
+        foreach ($badFile in $badFiles) {
+            $corruptFound = $true
+            Write-Host "  [Fixing] Corrupt registry file found: $($badFile.Name) - removing..." -ForegroundColor Yellow
+            Remove-Item $badFile.FullName -Force -ErrorAction SilentlyContinue
+            Write-Host "  [OK] Removed $($badFile.Name)." -ForegroundColor Green
+        }
     }
+}
 
-    # Fix 2: Check nupkg files are valid zip files (PK header check)
+# Fix 2: Check nupkg files are valid zip files (PK header check)
+if (Test-Path $chocoLib) {
     Get-ChildItem -Path $chocoLib -Directory | ForEach-Object {
         $pkgName = $_.Name
         $nupkgPath = Join-Path $_.FullName "$pkgName.nupkg"
@@ -183,12 +188,10 @@ if (Test-Path $chocoLib) {
             }
         }
     }
+}
 
-    if (-not $corruptFound) {
-        Write-Host "  [OK] All Chocolatey packages look healthy." -ForegroundColor Green
-    }
-} else {
-    Write-Host "  [OK] Chocolatey lib folder not found, skipping corruption check." -ForegroundColor Green
+if (-not $corruptFound) {
+    Write-Host "  [OK] All Chocolatey packages look healthy." -ForegroundColor Green
 }
 
 Write-Host ""
