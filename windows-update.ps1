@@ -113,8 +113,20 @@ foreach ($package in $PACKAGES) {
 }
 
 Write-Host ""
-Write-Host "Upgrading all packages..." -ForegroundColor Cyan
-& choco upgrade all -y --ignore-checksums
+Write-Host "Upgrading packages one at a time..." -ForegroundColor Cyan
+
+foreach ($package in $PACKAGES) {
+    $chocoInstalled = & choco list --local-only 2>$null | Select-String "^$package "
+    if ($chocoInstalled) {
+        Write-Host "  [Upgrading] $package..." -ForegroundColor Yellow
+        & choco upgrade $package -y --no-progress --ignore-checksums 2>&1 | Out-Null
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "  [OK] $package up to date." -ForegroundColor Green
+        } else {
+            Write-Host "  [Skipped] $package could not be upgraded." -ForegroundColor DarkYellow
+        }
+    }
+}
 
 Write-Host ""
 Write-Host "Cleaning up old versions..." -ForegroundColor Cyan
