@@ -145,11 +145,21 @@ Write-Host "Checking for corrupted Chocolatey packages..." -ForegroundColor Cyan
 $chocoLib = "C:\ProgramData\chocolatey\lib"
 if (Test-Path $chocoLib) {
     $corruptFound = $false
+
+    # Fix 1: Remove any .registry.bad files (corrupt XML registry files)
+    $badFiles = Get-ChildItem -Path $chocoLib -Recurse -Filter "*.registry.bad" -ErrorAction SilentlyContinue
+    foreach ($badFile in $badFiles) {
+        $corruptFound = $true
+        Write-Host "  [Fixing] Corrupt registry file found: $($badFile.Name) - removing..." -ForegroundColor Yellow
+        Remove-Item $badFile.FullName -Force -ErrorAction SilentlyContinue
+        Write-Host "  [OK] Removed $($badFile.Name)." -ForegroundColor Green
+    }
+
+    # Fix 2: Check nupkg files are valid zip files (PK header check)
     Get-ChildItem -Path $chocoLib -Directory | ForEach-Object {
         $pkgName = $_.Name
         $nupkgPath = Join-Path $_.FullName "$pkgName.nupkg"
         if (Test-Path $nupkgPath) {
-            # Validate nupkg is a real zip file by checking the ZIP magic bytes (PK header)
             $isCorrupt = $false
             try {
                 $bytes = [System.IO.File]::ReadAllBytes($nupkgPath)
@@ -173,6 +183,7 @@ if (Test-Path $chocoLib) {
             }
         }
     }
+
     if (-not $corruptFound) {
         Write-Host "  [OK] All Chocolatey packages look healthy." -ForegroundColor Green
     }
