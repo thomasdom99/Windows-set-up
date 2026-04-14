@@ -113,20 +113,8 @@ foreach ($package in $PACKAGES) {
 }
 
 Write-Host ""
-Write-Host "Upgrading packages one at a time..." -ForegroundColor Cyan
-
-foreach ($package in $PACKAGES) {
-    $chocoInstalled = & choco list --local-only 2>$null | Select-String "^$package "
-    if ($chocoInstalled) {
-        Write-Host "  [Upgrading] $package..." -ForegroundColor Yellow
-        & choco upgrade $package -y --no-progress --ignore-checksums 2>&1 | Out-Null
-        if ($LASTEXITCODE -eq 0) {
-            Write-Host "  [OK] $package up to date." -ForegroundColor Green
-        } else {
-            Write-Host "  [Skipped] $package could not be upgraded." -ForegroundColor DarkYellow
-        }
-    }
-}
+Write-Host "Upgrading all packages..." -ForegroundColor Cyan
+& choco upgrade all -y --no-progress --ignore-checksums --execution-timeout=300
 
 Write-Host ""
 Write-Host "Cleaning up old versions..." -ForegroundColor Cyan
@@ -181,7 +169,6 @@ winget source update --accept-source-agreements 2>&1 | Out-Null
 
 $WINGET_PACKAGES = @(
     @{ Id = "Postman.Postman";       Name = "Postman";    Source = "winget" },
-    @{ Id = "9NT1R1C2HH7J";         Name = "ChatGPT";    Source = "msstore" },
     @{ Id = "Oracle.VirtualBox";     Name = "VirtualBox"; Source = "winget" },
     @{ Id = "OBSProject.OBSStudio";  Name = "OBS Studio"; Source = "winget" }
 )
