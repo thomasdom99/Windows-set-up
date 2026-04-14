@@ -132,8 +132,17 @@ if (Test-Path $chocoLib) {
         $pkgName = $_.Name
         $nupkgPath = Join-Path $_.FullName "$pkgName.nupkg"
         if (Test-Path $nupkgPath) {
-            $size = (Get-Item $nupkgPath).Length
-            if ($size -lt 1024) {
+            # Validate nupkg is a real zip file by checking the ZIP magic bytes (PK header)
+            $isCorrupt = $false
+            try {
+                $bytes = [System.IO.File]::ReadAllBytes($nupkgPath)
+                if ($bytes.Length -lt 4 -or $bytes[0] -ne 0x50 -or $bytes[1] -ne 0x4B) {
+                    $isCorrupt = $true
+                }
+            } catch {
+                $isCorrupt = $true
+            }
+            if ($isCorrupt) {
                 $corruptFound = $true
                 Write-Host "  [Fixing] Corrupt nupkg detected: $pkgName - reinstalling..." -ForegroundColor Yellow
                 choco uninstall $pkgName -y --force 2>&1 | Out-Null
@@ -157,6 +166,9 @@ if (Test-Path $chocoLib) {
 Write-Host ""
 Write-Host "Checking winget apps..." -ForegroundColor Cyan
 
+# Accept winget source agreements upfront to prevent hanging
+winget source update --accept-source-agreements 2>&1 | Out-Null
+
 $WINGET_PACKAGES = @(
     @{ Id = "Postman.Postman";       Name = "Postman" },
     @{ Id = "OpenAI.ChatGPT";        Name = "ChatGPT" },
@@ -164,7 +176,7 @@ $WINGET_PACKAGES = @(
 )
 
 foreach ($pkg in $WINGET_PACKAGES) {
-    $wingetCheck = winget list --id $pkg.Id 2>$null | Select-String $pkg.Id
+    $wingetCheck = winget list --id $pkg.Id --accept-source-agreements 2>$null | Select-String $pkg.Id
     if ($wingetCheck) {
         Write-Host "  [OK] $($pkg.Name) already installed, skipping." -ForegroundColor Green
     } else {
