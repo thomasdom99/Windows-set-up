@@ -70,7 +70,9 @@ $PACKAGES = @(
     "winrar",
     "revo-uninstaller",
     "notepadplusplus",
-    "epicgameslauncher"
+    "epicgameslauncher",
+    "1password",
+    "sublimetext4"
 )
 
 Write-Host ""
@@ -105,6 +107,8 @@ foreach ($package in $PACKAGES) {
         "revo-uninstaller" { "Revo Uninstaller" }
         "notepadplusplus"  { "Notepad++" }
         "epicgameslauncher"{ "Epic Games Launcher" }
+        "1password"        { "1Password" }
+        "sublimetext4"     { "Sublime Text" }
         default            { $package }
     }
     $registryInstalled = Get-ItemProperty $registryPaths -ErrorAction SilentlyContinue |
