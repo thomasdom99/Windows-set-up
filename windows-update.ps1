@@ -28,20 +28,16 @@ if (!(Get-Command choco -ErrorAction SilentlyContinue)) {
 $PACKAGES = @(
     "spotify",
     "googlechrome",
-    "brave",
     "discord",
     "microsoft-teams",
     "vscode",
     "github-desktop",
     "docker-desktop",
-    "bitwarden",
     "notion",
     "steam",
     "drawio",
-    "wireshark",
     "python",
     "git",
-    "filezilla",
     "xampp",
     "vlc",
     "handbrake",
@@ -68,20 +64,16 @@ foreach ($package in $PACKAGES) {
     $displayName = switch ($package) {
         "spotify"          { "Spotify" }
         "googlechrome"     { "Google Chrome" }
-        "brave"            { "Brave" }
         "discord"          { "Discord" }
         "microsoft-teams"  { "Microsoft Teams" }
         "vscode"           { "Microsoft Visual Studio Code" }
         "github-desktop"   { "GitHub Desktop" }
         "docker-desktop"   { "Docker Desktop" }
-        "bitwarden"        { "Bitwarden" }
         "notion"           { "Notion" }
         "steam"            { "Steam" }
         "drawio"           { "draw.io" }
-        "wireshark"        { "Wireshark" }
         "python"           { "Python" }
         "git"              { "Git" }
-        "filezilla"        { "FileZilla" }
         "xampp"            { "XAMPP" }
         "vlc"              { "VLC media player" }
         "handbrake"        { "HandBrake" }
@@ -191,7 +183,6 @@ Write-Host "Checking winget apps..." -ForegroundColor Cyan
 winget source update --accept-source-agreements 2>&1 | Out-Null
 
 $WINGET_PACKAGES = @(
-    @{ Id = "Postman.Postman";       Name = "Postman";    Source = "winget" },
     @{ Id = "Oracle.VirtualBox";     Name = "VirtualBox"; Source = "winget" },
     @{ Id = "OBSProject.OBSStudio";  Name = "OBS Studio"; Source = "winget" }
 )
