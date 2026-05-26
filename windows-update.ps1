@@ -205,7 +205,9 @@ $WINGET_PACKAGES = @(
 foreach ($pkg in $WINGET_PACKAGES) {
     $wingetCheck = winget list --id $pkg.Id --accept-source-agreements 2>$null | Select-String $pkg.Id
     if ($wingetCheck) {
-        Write-Host "  [OK] $($pkg.Name) already installed, skipping." -ForegroundColor Green
+        Write-Host "  [Upgrading] $($pkg.Name)..." -ForegroundColor Yellow
+        winget upgrade --id $pkg.Id -e --source $pkg.Source --silent --accept-source-agreements --accept-package-agreements 2>&1 | Out-Null
+        Write-Host "  [OK] $($pkg.Name) up to date." -ForegroundColor Green
     } else {
         Write-Host "  [Downloading] Installing $($pkg.Name)..." -ForegroundColor Yellow
         winget install --id $pkg.Id -e --source $pkg.Source --silent --accept-source-agreements --accept-package-agreements 2>&1 | Out-Null
